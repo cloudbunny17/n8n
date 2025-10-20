@@ -57,7 +57,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/
 bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh)
 ```
 **Windows (PowerShell):**
-```iex (irm https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.ps1)
+```
+iex (irm https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.ps1)
 ```
 
 ### What Happens Next?
