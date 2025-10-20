@@ -26,8 +26,8 @@ N8N_PORT="${N8N_PORT:-5678}"
 
 print_header() {
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║${NC}          ${GREEN}n8n One-Step Installation Script${NC}   ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}          Automate your workflow automation!              ${BLUE}║${NC}"
+    echo -e "${BLUE}║               ${GREEN}n8n One-Step Installation Script       ║${NC}"
+    echo -e "${BLUE}║               Automate your workflow automation!             ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
