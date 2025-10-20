@@ -49,12 +49,12 @@ A smart installation script that automatically detects your operating system and
 
 **macOS/Linux:**
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/yourusername/n8n-installer/main/install-n8n.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh)
 ```
 
 **Windows (Git Bash/WSL):**
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/yourusername/n8n-installer/main/install-n8n.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh)
 ```
 
 ### What Happens Next?
@@ -98,7 +98,7 @@ After running the command, you'll see:
 
 ```bash
 # Download the script
-curl -O https://raw.githubusercontent.com/yourusername/n8n-installer/main/install-n8n.sh
+curl -O https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh
 
 # Make it executable
 chmod +x install-n8n.sh
@@ -123,7 +123,7 @@ export N8N_PORT=5679
 | Debian | 10+ | ✅ Fully Supported | NodeSource + npm |
 | Fedora | 33+ | ✅ Fully Supported | NodeSource + npm |
 | RHEL/CentOS | 8+ | ✅ Fully Supported | NodeSource + npm |
-| Windows 10/11 | WSL/Git Bash | ⚠️ Partial Support | Manual Node.js required |
+| Windows 10/11 | WSL/Git Bash | ⚠️ Partial Support | Manual Node.js required | ⚠️ May Work |
 | Other Linux | - | ⚠️ May Work | Generic Linux support |
 
 ## 📦 What Gets Installed
@@ -319,7 +319,7 @@ Contributions are welcome! Here's how you can help:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/n8n-installer.git
+git clone git@github.com:cloudbunny17/n8n.git
 cd n8n-installer
 
 # Test the script
@@ -337,7 +337,7 @@ cd n8n-installer
 
 ## 🎓 About the Author
 
-Hi! I'm [Your Name], an AI/automation enthusiast specializing in workflow optimization and intelligent automation solutions.
+Hi! I'm Chetansingh Rajput, an AI/automation enthusiast specializing in workflow optimization and intelligent automation solutions.
 
 **What I Do:**
 - Build AI-powered automation workflows
@@ -345,27 +345,19 @@ Hi! I'm [Your Name], an AI/automation enthusiast specializing in workflow optimi
 - Write about n8n, AI, and productivity
 
 **Connect With Me:**
-- 🐦 Twitter: [@yourhandle](https://twitter.com/yourhandle)
-- 💼 LinkedIn: [Your Name](https://linkedin.com/in/yourprofile)
-- 📝 Blog: [yourblog.com](https://yourblog.com)
-- 📧 Email: your.email@example.com
+- 💼 LinkedIn: [Chetansingh Rajput](www.linkedin.com/in/chetansingh-rajput-45672774)
+- 📝 Blog: https://medium.com/@cloudbunny
+- 📧 Email: ping2cloudbunny@gmail.com
 
-**Portfolio Projects:**
-- [n8n Custom Nodes Collection](https://github.com/yourusername/n8n-nodes)
-- [AI Workflow Templates](https://github.com/yourusername/ai-workflows)
-- [Automation Scripts Library](https://github.com/yourusername/automation-scripts)
+### Why I Built This Script
 
-### Why I Built This
-
-As someone who's installed n8n dozens of times across different machines and operating systems, I noticed everyone struggles with the same issues:
+As someone who has installed n8n dozens of times across different machines and operating systems, I noticed everyone struggles with the same issues most of the times:
 - Outdated Node.js versions
 - Permission errors
 - Port conflicts
 - Configuration confusion
 
 This script solves all those problems in one go. I built it for myself, but I'm sharing it because I believe great tools should be easy to use.
-
-If you're hiring for AI Manager or Automation Engineer roles, [let's talk](mailto:your.email@example.com)! 🚀
 
 ## 📄 License
 
@@ -392,8 +384,7 @@ If this script saved you time, please:
 **Coming Soon:**
 - Docker installation option
 - Update checker
-- Uninstall script
-- GUI installer for Windows
+- Uninstallation script
 
 ---
 
@@ -401,10 +392,6 @@ If this script saved you time, please:
 
 **Made with ❤️ and lots of coffee**
 
-[Report Bug](https://github.com/yourusername/n8n-installer/issues) · 
-
-[Request Feature](https://github.com/yourusername/n8n-installer/issues) · 
-
-[Documentation](https://github.com/yourusername/n8n-installer/wiki)
+[Request Feature](https://github.com/cloudbunny17/n8n/issues) · 
 
 </div>
