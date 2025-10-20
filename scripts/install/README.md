@@ -49,12 +49,15 @@ A smart installation script that automatically detects your operating system and
 
 **macOS/Linux:**
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh)
 ```
 
 **Windows (Git Bash/WSL):**
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh)
+```
+**Windows (PowerShell):**
+```iex (irm https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.ps1)
 ```
 
 ### What Happens Next?
@@ -98,7 +101,7 @@ After running the command, you'll see:
 
 ```bash
 # Download the script
-curl -O https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/n8n/installation-methods/install_n8n.sh
+curl -O https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh
 
 # Make it executable
 chmod +x install-n8n.sh
