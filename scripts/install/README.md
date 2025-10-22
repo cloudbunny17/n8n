@@ -57,9 +57,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/
 bash <(curl -fsSL https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh)
 ```
 **Windows (PowerShell):**
+```iex (irm https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n_windows.ps1)
 ```
-iex (irm https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.ps1)
-```
+### Note⚠️ - Run that in PowerShell as Administrator you will need elevated privileges to install n8n globally on Windows.
 
 ### What Happens Next?
 
@@ -343,11 +343,6 @@ cd n8n-installer
 
 Hi! I'm Chetansingh Rajput, an AI/automation enthusiast specializing in workflow optimization and intelligent automation solutions.
 
-**What I Do:**
-- Build AI-powered automation workflows
-- Create developer tools and scripts
-- Write about n8n, AI, and productivity
-
 **Connect With Me:**
 - 💼 LinkedIn: [Chetansingh Rajput](www.linkedin.com/in/chetansingh-rajput-45672774)
 - 📝 Blog: https://medium.com/@cloudbunny
@@ -386,8 +381,6 @@ If this script saved you time, please:
 - ✅ Configuration management
 
 **Coming Soon:**
-- Docker installation option
-- Update checker
 - Uninstallation script
 
 ---

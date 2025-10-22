@@ -358,7 +358,7 @@ print_post_install() {
     echo ""
     echo -e "${BLUE}Documentation:${NC}"
     echo "  • Official docs: https://docs.n8n.io/"
-    echo "  • GitHub repo:   https://github.com/[your-username]/n8n-installer"
+    echo "  • GitHub repo:   https://github.com/cloudbunny17/n8n.git"
     echo ""
     echo -e "${GREEN}Happy Automating! 🚀${NC}"
     echo ""

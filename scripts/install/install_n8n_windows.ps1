@@ -391,7 +391,7 @@ function Show-PostInstall {
     
     Write-Host "Documentation:" -ForegroundColor Blue
     Write-Host "  • Official docs: https://docs.n8n.io/"
-    Write-Host "  • GitHub repo:   https://github.com/[your-username]/n8n-installer"
+    Write-Host "  • GitHub repo:   https://github.com/cloudbunny17/n8n.git"
     Write-Host ""
     Write-Host "Happy Automating! 🚀" -ForegroundColor Green
     Write-Host ""
