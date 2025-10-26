@@ -106,17 +106,17 @@ After running the command, you'll see:
 curl -O https://raw.githubusercontent.com/cloudbunny17/n8n/refs/heads/main/scripts/install/install_n8n.sh
 
 # Make it executable
-chmod +x install-n8n.sh
+chmod +x install_n8n.sh
 
 # Run it
-./install-n8n.sh
+./install_n8n.sh
 ```
 
 ### Using a Custom Port
 
 ```bash
 export N8N_PORT=5679
-./install-n8n.sh
+./install_n8n.sh
 ```
 
 ## 💻 Supported Operating Systems
@@ -325,10 +325,10 @@ Contributions are welcome! Here's how you can help:
 ```bash
 # Clone the repository
 git clone git@github.com:cloudbunny17/n8n.git
-cd n8n-installer
+cd n8n/script/install
 
 # Test the script
-./install-n8n.sh
+./install_n8n.sh
 
 # Make changes and submit a PR
 ```
