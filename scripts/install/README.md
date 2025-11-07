@@ -3,7 +3,7 @@
 > **Automate your workflow automation!** Install n8n on any OS with a single command.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Supported OS](https://img.shields.io/badge/OS-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/yourusername/n8n-installer)
+[![Supported OS](https://img.shields.io/badge/OS-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/cloudbunny17/n8n/tree/main/scripts/install)
 [![n8n Version](https://img.shields.io/badge/n8n-latest-brightgreen)](https://n8n.io/)
 
 ## 📋 Table of Contents
@@ -337,8 +337,7 @@ cd n8n/script/install
 
 - **n8n Documentation:** https://docs.n8n.io/
 - **n8n Community:** https://community.n8n.io/
-- **My Blog Post:** [Complete Guide to Installing n8n Locally](https://medium.com/@yourhandle/your-article)
-- **YouTube Tutorial:** [Coming Soon]
+- **My Blog Post:** [Complete Guide to Installing n8n Locally](https://medium.com/@cloudbunny/how-to-install-n8n-locally-without-breaking-node-or-docker-71523fd59da0)
 
 ## 🎓 About the Author
 

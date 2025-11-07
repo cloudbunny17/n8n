@@ -1,0 +1,245 @@
+version: "3.9"
+
+services:
+  # PostgreSQL Database for n8n
+  postgres:
+    image: postgres:15
+    container_name: kg_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-n8n}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-n8n}
+      POSTGRES_DB: ${POSTGRES_DB:-n8n}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pkg_net
+    restart: unless-stopped
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: kg_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pkg_net
+    restart: unless-stopped
+
+  # Ollama LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kg_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+      - ./scripts:/scripts:ro
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - pkg_net
+    restart: unless-stopped
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: all
+#              capabilities: [gpu]
+    # Remove the deploy section above if you don't have GPU
+
+  # Whisper Speech-to-Text Service
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: kg_whisper
+    ports:
+      - "8000:9000"
+    environment:
+      ASR_MODEL: ${WHISPER_MODEL:-base}
+      ASR_ENGINE: openai_whisper
+    volumes:
+      - whisper_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - pkg_net
+    restart: unless-stopped
+    # Uncomment below for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Worker Service for OCR and PDF Processing (OPTIONAL - comment out if not using)
+  # Uncomment if you need dedicated OCR/PDF service
+  # worker:
+  #   build:
+  #     context: ./worker
+  #     dockerfile: Dockerfile
+  #   container_name: kg_worker
+  #   environment:
+  #     TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
+  #     TESSERACT_LANG: ${TESSERACT_LANG:-eng}
+  #   volumes:
+  #     - shared:/files
+  #     - ./worker/scripts:/scripts:ro
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #   ports:
+  #     - "8001:8000"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - pkg_net
+  #   restart: unless-stopped
+
+  # n8n Automation Platform
+  n8n:
+    build:
+      context: ./n8n-custom
+      dockerfile: Dockerfile
+    container_name: kg_n8n
+    environment:
+      # Core n8n settings - CRITICAL FOR TELEGRAM
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
+      N8N_PORT: 5678
+      WEBHOOK_URL: ${N8N_PROTOCOL:-https}://${N8N_HOST}/
+      N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL:-https}://${N8N_HOST}/
+      
+      # Database
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-n8n}
+      
+      # Security & Encryption
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme-please-use-secure-key}
+      N8N_USER_FOLDER: /home/node/.n8n
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-changeme}
+      
+      # File handling - CRITICAL FOR MEDIA DOWNLOADS
+      N8N_DEFAULT_BINARY_DATA_MODE: filesystem
+      N8N_BINARY_DATA_TTL: 1440
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: true
+      EXECUTIONS_DATA_PRUNE: true
+      EXECUTIONS_DATA_MAX_AGE: 336
+      
+      # Workflow execution settings
+      EXECUTIONS_PROCESS: main
+      EXECUTIONS_TIMEOUT: 300
+      EXECUTIONS_TIMEOUT_MAX: 600
+      
+      # Generic timezone and logging
+      GENERIC_TIMEZONE: ${TIMEZONE:-UTC}
+      TZ: ${TIMEZONE:-UTC}
+      N8N_LOG_LEVEL: ${N8N_LOG_LEVEL:-info}
+      N8N_LOG_OUTPUT: ${N8N_LOG_OUTPUT:-console}
+      
+      # Disable telemetry (optional)
+      N8N_DIAGNOSTICS_ENABLED: false
+      N8N_PERSONALIZATION_ENABLED: false
+      
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - shared:/files
+      - ./n8n/workflows:/workflows:ro
+      - ./n8n/backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      whisper:
+        condition: service_healthy
+      # worker:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pkg_net
+    restart: unless-stopped
+
+  # Optional: Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: kg_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - n8n
+    networks:
+      - pkg_net
+    restart: unless-stopped
+    # Comment out this service if you don't need reverse proxy
+
+volumes:
+  pgdata:
+    name: kg_pgdata
+  qdrant:
+    name: kg_qdrant
+  ollama:
+    name: kg_ollama
+  whisper_cache:
+    name: kg_whisper_cache
+  n8n_data:
+    name: kg_n8n_data
+  shared:
+    name: kg_shared
+  nginx_cache:
+    name: kg_nginx_cache
+
+networks:
+  pkg_net:
+    name: ${DOCKER_NETWORK:-knowledge_garden_net}
+    driver: bridge
