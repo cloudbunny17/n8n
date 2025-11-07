@@ -1,0 +1,1230 @@
+{
+  "name": "Cloudbunny's - Knowledge Garden",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "dc7e3036-6fdd-4c83-8375-65f375f6b419",
+      "name": "📱 Telegram",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -784,
+        224
+      ],
+      "webhookId": "kg",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced classifier with content type detection\nconst msg = $input.first().json.message;\nconst text = (msg.text || '').toLowerCase();\nconst chatId = msg.chat.id;\n\n// Detect content type\nconst hasVoice = !!msg.voice;\nconst hasPhoto = !!msg.photo;\nconst hasDocument = !!msg.document;\nconst hasUrl = text.match(/https?:\\/\\/[^\\s]+/);\n\n// Question patterns = RETRIEVE\nif (text.match(/^(what|who|when|where|why|how|tell|show|find|search|recall|did i|do you|when did|where is)/) || text.includes('?')) {\n  return [{ json: { action: 'RETRIEVE', chatId, text: msg.text } }];\n}\n\n// Content to store\nlet contentType = 'text';\nlet content = text || '[no text]';\n\nif (hasVoice) {\n  contentType = 'voice';\n  content = msg.voice;\n} else if (hasPhoto) {\n  contentType = 'image';\n  content = msg.photo[msg.photo.length - 1]; // Get highest quality\n} else if (hasDocument) {\n  const fileName = msg.document.file_name || '';\n  if (fileName.toLowerCase().endsWith('.pdf')) {\n    contentType = 'pdf';\n  } else {\n    contentType = 'document';\n  }\n  content = msg.document;\n} else if (hasUrl) {\n  contentType = 'url';\n  content = hasUrl[0];\n}\n\nreturn [{ json: { \n  action: 'STORE', \n  chatId, \n  contentType,\n  content,\n  caption: msg.caption || '',\n  originalText: msg.text || ''\n}}];"
+      },
+      "id": "9f858695-7ee3-4267-96f8-ce29ec80dbe8",
+      "name": "🧠 Classify Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "value2": "STORE"
+            }
+          ]
+        }
+      },
+      "id": "ea69cbb1-9ffe-4b2b-819a-690e147e05b0",
+      "name": "🔀 Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Text handler - pass through\nconst text = $json.originalText || $json.content;\nconst chatId = $json.chatId;\n\nreturn [{ json: { \n  text, \n  chatId,\n  contentType: 'text',\n  metadata: {\n    source: 'text_message',\n    timestamp: new Date().toISOString()\n  }\n}}];"
+      },
+      "id": "b2f9d168-038b-48f8-9366-29b5d831d521",
+      "name": "📝 Process Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Voice handler - download file for Whisper\nconst voice = $json.content;\nconst chatId = $json.chatId;\nconst caption = $json.caption;\n\nreturn [{ json: { \n  fileId: voice.file_id,\n  chatId,\n  caption,\n  contentType: 'voice'\n}}];"
+      },
+      "id": "e1453288-ef73-4a67-b0a1-0a96081940d3",
+      "name": "🎤 Process Voice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{$json.fileId}}",
+        "additionalFields": {}
+      },
+      "id": "94881348-20ad-4bfb-96e1-3bf27fdb9b08",
+      "name": "⬇️ Download Voice",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        -96
+      ],
+      "webhookId": "ea134dc9-ed74-4823-ae0a-890d4097e9bf",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper:9000/asr",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "audio_file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "task",
+              "value": "transcribe"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "output",
+              "value": "txt"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "672f0e35-d1cc-4c60-9146-f0387fb98f02",
+      "name": "🗣️ Whisper Transcribe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge transcription\nconst voiceData = $('🎤 Process Voice').item.json;\nconst caption = voiceData.caption ?? '';\nconst whisperResponse = $input.first().json;\n\nlet transcription = '';\nif (typeof whisperResponse === 'string') {\n    transcription = whisperResponse;\n} else if (whisperResponse.text) {\n    transcription = whisperResponse.text;\n} else {\n    transcription = JSON.stringify(whisperResponse);\n}\n\ntranscription = String(transcription).trim();\nif (!transcription) throw new Error('Empty transcription');\n\nconst text = caption ? `${caption}\\n\\n[Voice]: ${transcription}` : transcription;\n\nreturn [{\n    json: {\n        text: text,\n        chatId: voiceData.chatId,\n        contentType: 'voice',\n        metadata: {\n            source: 'voice_message',\n            transcription: transcription,\n            caption: caption,\n            timestamp: new Date().toISOString()\n        }\n    }\n}];"
+      },
+      "id": "1235d643-725c-46d0-b79f-cd6bd5b64e4e",
+      "name": "🔗 Merge Voice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Image handler - download for OCR\nconst photo = $json.content;\nconst chatId = $json.chatId;\nconst caption = $json.caption;\n\nreturn [{ json: { \n  fileId: photo.file_id,\n  chatId,\n  caption,\n  contentType: 'image'\n}}];"
+      },
+      "id": "9eb3f0c8-04c8-4524-acab-8db7f76a8d06",
+      "name": "📸 Process Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{$json.fileId}}",
+        "additionalFields": {}
+      },
+      "id": "458314c0-9041-4d76-a8c1-89fa1b256a7a",
+      "name": "⬇️ Download Image",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        112
+      ],
+      "webhookId": "5f9c439d-9488-4e9d-8faf-7c31f510f065",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "tesseract /tmp/telegram_image.jpg stdout"
+      },
+      "id": "21ee20f6-7117-4901-9e3b-03d6d27a5a24",
+      "name": "👁️ Tesseract OCR",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        720,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge OCR with context (force string)\nconst ocrRaw = $json.stdout;\nlet ocrText;\nif (typeof ocrRaw === 'string') ocrText = ocrRaw;\nelse if (ocrRaw == null) ocrText = '';\nelse { try { ocrText = JSON.stringify(ocrRaw); } catch { ocrText = String(ocrRaw); } }\n\nconst imageData = $('📸 Process Image').item.json;\nconst caption = imageData.caption ?? '';\nconst text = caption ? `${caption}\\n\\n[Image text]: ${ocrText}` : ocrText;\n\nreturn [{\n  json: {\n    text: text.replace(/\\s+/g, ' ').trim(),\n    chatId: imageData.chatId,\n    contentType: 'image',\n    metadata: {\n      source: 'image_ocr',\n      ocr_text: ocrText,\n      caption,\n      timestamp: new Date().toISOString()\n    }\n  }\n}];\n"
+      },
+      "id": "5255d710-cbfa-4540-846d-ca60259b05d6",
+      "name": "🔗 Merge Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// PDF handler - download for parsing\nconst doc = $json.content;\nconst chatId = $json.chatId;\nconst caption = $json.caption;\n\nreturn [{ json: { \n  fileId: doc.file_id,\n  fileName: doc.file_name,\n  chatId,\n  caption,\n  contentType: 'pdf'\n}}];"
+      },
+      "id": "2089c76f-1040-4843-a0bc-1c0024feeb7d",
+      "name": "📄 Process PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{$json.fileId}}",
+        "additionalFields": {}
+      },
+      "id": "5fc7e192-4b70-499f-a69d-7ef29e1997e8",
+      "name": "⬇️ Download PDF",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        656
+      ],
+      "webhookId": "0439fa98-1dd0-40a5-90fb-545cf7c95619",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "pdftotext /tmp/telegram_file.pdf -"
+      },
+      "id": "a0be1720-a2c1-4ec4-bdb5-2d1d4e7a80df",
+      "name": "📖 Extract PDF Text",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        720,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge PDF text with context (force string)\nconst pdfRaw = $json.stdout;\nlet pdfText;\nif (typeof pdfRaw === 'string') pdfText = pdfRaw;\nelse if (pdfRaw == null) pdfText = '';\nelse { try { pdfText = JSON.stringify(pdfRaw); } catch { pdfText = String(pdfRaw); } }\n\nconst pdfData = $('📄 Process PDF').item.json;\nconst caption = pdfData.caption ?? '';\nconst fileName = pdfData.fileName || 'document.pdf';\n\nconst composed = caption\n  ? `${caption}\\n\\n[PDF: ${fileName}]:\\n${pdfText}`\n  : `[PDF: ${fileName}]:\\n${pdfText}`;\n\nreturn [{\n  json: {\n    text: composed.replace(/\\s+/g, ' ').trim(),\n    chatId: pdfData.chatId,\n    contentType: 'pdf',\n    metadata: {\n      source: 'pdf_document',\n      file_name: fileName,\n      caption,\n      timestamp: new Date().toISOString()\n    }\n  }\n}];\n"
+      },
+      "id": "77e0cfcb-3204-4109-bcf6-a84a09a34e89",
+      "name": "🔗 Merge PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// URL handler - extract URL\nconst url = $json.content;\nconst chatId = $json.chatId;\nconst originalText = $json.originalText;\n\nreturn [{ json: { \n  url,\n  chatId,\n  originalText,\n  contentType: 'url'\n}}];"
+      },
+      "id": "f7479c64-b602-4a00-b86c-055dc29c9b98",
+      "name": "🔗 Process URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://r.jina.ai/{{$json.url}}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "252953d3-0bc3-421b-af0a-d46f2a90892a",
+      "name": "🌐 Fetch URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse HTML and extract text content\nconst html = $json.body || '';\nconst urlData = $('🔗 Process URL').item.json;\n\n// Simple HTML to text conversion\nlet text = html\n  .replace(/<script[^>]*>.*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>.*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim();\n\n// Limit to first 5000 chars to avoid overwhelming the system\nif (text.length > 5000) {\n  text = text.slice(0, 5000) + '... [truncated]';\n}\n\nconst finalText = `[URL: ${urlData.url}]\\n${urlData.originalText}\\n\\nContent: ${text}`;\n\nreturn [{ json: { \n  text: finalText,\n  chatId: urlData.chatId,\n  contentType: 'url',\n  metadata: {\n    source: 'url_scrape',\n    url: urlData.url,\n    original_message: urlData.originalText,\n    timestamp: new Date().toISOString()\n  }\n}}];"
+      },
+      "id": "cf95af3c-c6b6-4bc1-8250-1b015afe2f07",
+      "name": "📰 Parse URL Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all processed content streams\nconst data = $input.first().json;\nreturn [{ json: data }];"
+      },
+      "id": "8cfeb308-8f6e-4dd6-9449-1084e4fca43a",
+      "name": "🔄 Merge All Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robust chunker (coerce to string first)\nconst MAX_TOKENS = +($env.MAX_TOKENS || 512);\nconst OVERLAP    = +($env.OVERLAP    || 64);\nconst CHARS_PER_TOKEN = 4;\nconst CHUNK_SIZE = Math.max(20, Math.floor(MAX_TOKENS * CHARS_PER_TOKEN));\nconst STEP = Math.max(1, CHUNK_SIZE - OVERLAP);\n\nfunction toCleanString(v) {\n  if (typeof v === 'string') return v;\n  if (Array.isArray(v)) return v.join(' ');\n  if (v == null) return '';\n  try { return JSON.stringify(v); } catch { return String(v); }\n}\n\nfunction chunkString(s, size, step) {\n  const out = [];\n  for (let i = 0; i < s.length; i += step) out.push(s.slice(i, i + size));\n  return out;\n}\n\nconst raw = $json.text ?? $json.message?.text ?? '';\nconst clean = toCleanString(raw).replace(/\\s+/g, ' ').trim();\n\nif (!clean) {\n  throw new Error('No text to store');\n}\n\nconst chunks = clean.length <= CHUNK_SIZE\n  ? [clean]\n  : chunkString(clean, CHUNK_SIZE, STEP);\n\nreturn [{ json: {\n  text: clean,\n  chunks,\n  chatId: $json.chatId,\n  contentType: $json.contentType,\n  metadata: $json.metadata\n}}];\n"
+      },
+      "id": "6c1f8874-8a27-4a4e-8f7d-420bc94cdf3d",
+      "name": "✂️ Chunk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass each chunk with full context\nconst chunks = $json.chunks;\nconst text = $json.text;\nconst chatId = $json.chatId;\nconst contentType = $json.contentType;\nconst metadata = $json.metadata;\n\nreturn chunks.map((chunk, idx) => ({ \n  json: { \n    chunk, \n    chunkIndex: idx,\n    totalChunks: chunks.length,\n    text, \n    chatId,\n    contentType,\n    metadata\n  } \n}));"
+      },
+      "id": "91956797-ebb0-4e92-9df2-742bf378be4f",
+      "name": "📤 Split Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify({ model: 'nomic-embed-text', prompt: $json.chunk })}}",
+        "options": {
+          "response": {
+            "response": {}
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "b3ae5632-befb-4527-b689-fea0ace82bdf",
+      "name": "🔢 Embed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1824,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge embedding with original context\nconst embedding = $json.embedding;\nconst itemIndex = $itemIndex;\nconst allInputItems = $('📤 Split Chunks').all();\nconst matchingInput = allInputItems[itemIndex];\n\nif (!matchingInput) {\n  throw new Error('Merge failed: no matching input');\n}\n\nconst originalData = matchingInput.json;\n\nreturn [{ json: { \n  embedding, \n  text: originalData.text,\n  chatId: originalData.chatId,\n  chunkIndex: originalData.chunkIndex,\n  contentType: originalData.contentType,\n  metadata: originalData.metadata\n}}];"
+      },
+      "id": "8b0b4692-0431-472a-9d4c-8ab7502e67f3",
+      "name": "🔗 Merge Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all embeddings and preserve context\nconst items = $input.all();\n\nif (items.length === 0) {\n  throw new Error('No items to collect');\n}\n\nconst embeddings = items.map(item => item.json.embedding);\nconst firstItem = items[0].json;\n\nreturn [{ json: { \n  embeddings, \n  text: firstItem.text, \n  chatId: firstItem.chatId,\n  contentType: firstItem.contentType,\n  metadata: firstItem.metadata\n}}];"
+      },
+      "id": "12419596-1b9a-47b6-a9c9-9c440cc3bb25",
+      "name": "📥 Collect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2256,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare for Qdrant with enhanced metadata\nconst embeddings = $json.embeddings || [];\nconst text = $json.text || '';\nconst chatId = $json.chatId;\nconst contentType = $json.contentType;\nconst metadata = $json.metadata || {};\nconst timestamp = Date.now();\n\nif (!text) {\n  throw new Error('No text to store');\n}\n\nconst points = embeddings.map((vector, idx) => ({\n  id: timestamp * 1000 + idx,\n  vector: vector,\n  payload: {\n    text: text,\n    excerpt: text.slice(0, 200),\n    date: new Date().toISOString(),\n    creator: 'cloudbunny17',\n    content_type: contentType,\n    ...metadata\n  }\n}));\n\nreturn [{ json: { points, text, chatId, contentType } }];"
+      },
+      "id": "ca8a0fa2-dd6c-4ec5-9a98-9449c379923a",
+      "name": "📦 Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://qdrant:6333/collections/garden/points",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify({ points: $json.points })}}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "969f049f-b7fa-4af0-a85d-f1ba8064996a",
+      "name": "💾 Store",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2672,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through chatId and text from Prepare node\nconst prepareData = $('📦 Prepare').item.json;\n\nreturn [{ json: { \n  chatId: prepareData.chatId,\n  text: prepareData.text,\n  contentType: prepareData.contentType,\n  storeResult: $json\n}}];"
+      },
+      "id": "b71ddc85-2b72-4937-8a2a-7a0c0fe11db2",
+      "name": "🔄 Passthrough",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{`🌱 Stored (${$json.contentType}): ${$json.text.slice(0, 100)}...`}}",
+        "additionalFields": {}
+      },
+      "id": "32f9d378-066a-4165-ba8f-ed619ac2334a",
+      "name": "✅ Stored",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3120,
+        128
+      ],
+      "webhookId": "71fe4eb8-a5c5-41ca-84d0-855ec1187a8a",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify({ model: 'nomic-embed-text', prompt: $json.text })}}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "30c708fc-ae40-400d-8af4-e463b6d41234",
+      "name": "🔢 Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preserve query context\nconst embedding = $json.embedding;\nconst routeData = $('🔀 Route').last().json;\n\nreturn [{ json: { \n  embedding, \n  chatId: routeData.chatId, \n  text: routeData.text \n}}];"
+      },
+      "id": "cc8057bb-68cd-4fa2-a57a-7003a0e2c194",
+      "name": "🔗 Preserve Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/garden/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify({ vector: $json.embedding, limit: 5, with_payload: true })}}",
+        "options": {}
+      },
+      "id": "3964af23-2842-466e-a74f-528e1da44508",
+      "name": "🔍 Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preserve chatId and text after search\nconst searchResults = $json.result || [];\nconst contextData = $('🔗 Preserve Context').item.json;\n\nreturn [{ json: { \n  result: searchResults, \n  chatId: contextData.chatId, \n  query: contextData.text \n}}];"
+      },
+      "id": "18bd7e76-26cf-4a25-b0c0-9e63ca7d4081",
+      "name": "🔗 Preserve Search Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format results with content type indicators\nconst results = $json.result || [];\nconst query = $json.query;\nconst chatId = $json.chatId;\n\nif (!chatId) {\n  throw new Error('No chatId found in format node');\n}\n\nif (results.length === 0) {\n  return [{ json: { \n    query, \n    context: null,\n    answer: \"🤷 I don't have any notes about that yet. Start sharing your thoughts!\", \n    chatId \n  }}];\n}\n\n// Format with content type emojis\nconst typeEmoji = {\n  text: '📝',\n  voice: '🎤',\n  image: '📸',\n  pdf: '📄',\n  url: '🔗'\n};\n\nconst context = results.map((hit, idx) => {\n  const text = hit.payload?.text || '';\n  const date = new Date(hit.payload?.date).toLocaleDateString();\n  const type = hit.payload?.content_type || 'text';\n  const emoji = typeEmoji[type] || '📝';\n  return `[${emoji} Note ${idx + 1}, ${date}]: ${text.slice(0, 200)}...`;\n}).join('\\n\\n');\n\nreturn [{ json: { query, context, chatId } }];"
+      },
+      "id": "9a936e1c-2926-47a7-b099-e069f7a5d172",
+      "name": "📋 Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{JSON.stringify({ model: 'llama3.2', prompt: 'You are a helpful personal knowledge assistant. Answer using ONLY these notes from the user. Be brief (2-3 sentences) but informative.\\n\\nNOTES:\\n' + ($json.context || 'No notes') + '\\n\\nQUESTION: ' + $json.query + '\\n\\nANSWER:', stream: false })}}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "2a9a05eb-7ab2-427e-be83-77c1ceb72323",
+      "name": "🤖 Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        848
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preserve chatId after LLM call\nconst llmResponse = $json.response;\nconst formatData = $('📋 Format').item.json;\nconst fallbackAnswer = formatData.answer;\nconst chatId = formatData.chatId;\n\nif (!chatId) {\n  throw new Error('No chatId found after answer');\n}\n\nconst answer = llmResponse || fallbackAnswer || 'Sorry, I had trouble answering.';\n\nreturn [{ json: { answer, chatId }}];"
+      },
+      "id": "1c0cd1aa-9d40-4cfd-b8e9-8107955cc881",
+      "name": "🔗 Preserve Answer Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{`🌿 ${$json.answer}`}}",
+        "additionalFields": {}
+      },
+      "id": "7746d2e8-486b-4757-b7b5-c5122a20d071",
+      "name": "💬 Answer",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        848
+      ],
+      "alwaysOutputData": true,
+      "webhookId": "8285e6f8-3d70-4420-8b9b-556886845a42",
+      "credentials": {
+        "telegramApi": {
+          "id": "SLZxDCAgoSBme1IK",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.contentType }}",
+              "value2": "voice"
+            }
+          ]
+        }
+      },
+      "id": "85066c60-a7bd-43fd-ab60-94af5777c74a",
+      "name": "Is Voice?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.contentType }}",
+              "value2": "image"
+            }
+          ]
+        }
+      },
+      "id": "a13bf7be-1e58-470f-bd10-57f52200a91b",
+      "name": "Is Image?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.contentType }}",
+              "value2": "pdf"
+            }
+          ]
+        }
+      },
+      "id": "c3e49d1f-b85d-4b82-8ec9-0474266a707e",
+      "name": "Is PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.contentType }}",
+              "value2": "url"
+            }
+          ]
+        }
+      },
+      "id": "b7136eb0-8bf2-4ade-b76b-f89d10191720",
+      "name": "Is URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "/tmp/telegram_image.jpg",
+        "options": {
+          "append": false
+        }
+      },
+      "id": "fd7e948b-7fc3-45b6-9057-31224eae3ed9",
+      "name": "📝 Write Image",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        512,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "/tmp/telegram_file.pdf",
+        "options": {}
+      },
+      "id": "949be386-2405-4cc5-94a7-832956a3b18f",
+      "name": "📝 Write PDF",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        512,
+        656
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📱 Telegram": {
+      "main": [
+        [
+          {
+            "node": "🧠 Classify Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Classify Content": {
+      "main": [
+        [
+          {
+            "node": "🔀 Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Route": {
+      "main": [
+        [
+          {
+            "node": "Is Voice?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔢 Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Process Text": {
+      "main": [
+        [
+          {
+            "node": "🔄 Merge All Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎤 Process Voice": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Download Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Download Voice": {
+      "main": [
+        [
+          {
+            "node": "🗣️ Whisper Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗣️ Whisper Transcribe": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Merge Voice": {
+      "main": [
+        [
+          {
+            "node": "🔄 Merge All Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📸 Process Image": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Download Image": {
+      "main": [
+        [
+          {
+            "node": "📝 Write Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "👁️ Tesseract OCR": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Merge Image": {
+      "main": [
+        [
+          {
+            "node": "🔄 Merge All Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Process PDF": {
+      "main": [
+        [
+          {
+            "node": "⬇️ Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⬇️ Download PDF": {
+      "main": [
+        [
+          {
+            "node": "📝 Write PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📖 Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Merge PDF": {
+      "main": [
+        [
+          {
+            "node": "🔄 Merge All Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Process URL": {
+      "main": [
+        [
+          {
+            "node": "🌐 Fetch URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Fetch URL": {
+      "main": [
+        [
+          {
+            "node": "📰 Parse URL Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📰 Parse URL Content": {
+      "main": [
+        [
+          {
+            "node": "🔄 Merge All Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Merge All Content": {
+      "main": [
+        [
+          {
+            "node": "✂️ Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✂️ Chunk": {
+      "main": [
+        [
+          {
+            "node": "📤 Split Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Split Chunks": {
+      "main": [
+        [
+          {
+            "node": "🔢 Embed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔢 Embed": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Merge Context": {
+      "main": [
+        [
+          {
+            "node": "📥 Collect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 Collect": {
+      "main": [
+        [
+          {
+            "node": "📦 Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Prepare": {
+      "main": [
+        [
+          {
+            "node": "💾 Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Store": {
+      "main": [
+        [
+          {
+            "node": "🔄 Passthrough",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Passthrough": {
+      "main": [
+        [
+          {
+            "node": "✅ Stored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔢 Embed Query": {
+      "main": [
+        [
+          {
+            "node": "🔗 Preserve Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Preserve Context": {
+      "main": [
+        [
+          {
+            "node": "🔍 Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Search": {
+      "main": [
+        [
+          {
+            "node": "🔗 Preserve Search Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Preserve Search Context": {
+      "main": [
+        [
+          {
+            "node": "📋 Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Format": {
+      "main": [
+        [
+          {
+            "node": "🤖 Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Answer": {
+      "main": [
+        [
+          {
+            "node": "🔗 Preserve Answer Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Preserve Answer Context": {
+      "main": [
+        [
+          {
+            "node": "💬 Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Voice?": {
+      "main": [
+        [
+          {
+            "node": "🎤 Process Voice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Image?": {
+      "main": [
+        [
+          {
+            "node": "📸 Process Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF?": {
+      "main": [
+        [
+          {
+            "node": "📄 Process PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is URL?": {
+      "main": [
+        [
+          {
+            "node": "🔗 Process URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📝 Process Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Write Image": {
+      "main": [
+        [
+          {
+            "node": "👁️ Tesseract OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Write PDF": {
+      "main": [
+        [
+          {
+            "node": "📖 Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ada6cc78-f591-4a31-8538-3d2b9f0b73fa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ec76744fdb2cd775421af08e2fb31803d4abdeded249d587cad18a3357965f92"
+  },
+  "id": "LgsEvvgfVGEnl2OV",
+  "tags": []
+}
