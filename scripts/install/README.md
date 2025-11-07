@@ -324,7 +324,7 @@ Contributions are welcome! Here's how you can help:
 
 ```bash
 # Clone the repository
-git clone git@github.com:cloudbunny17/n8n.git
+git clone https://github.com/cloudbunny17/n8n.git
 cd n8n/script/install
 
 # Test the script
